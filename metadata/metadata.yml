@@ -1,0 +1,8 @@
+metadata_version: 1
+name: Delete Archived Data Assets
+description: Identify archived data assets that are not in use and were created beyond
+  a certain period of time.
+tags:
+- operations
+authors:
+- name: David Feng
