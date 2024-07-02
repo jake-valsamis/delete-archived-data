@@ -1,7 +1,6 @@
 environment_version: 1
 credentials:
-- type: api-key
-  id: VdA24ykKBCGb2Q
-  description: code ocean API token
-  key: API_KEY
-  secret: API_SECRET
+- type: general
+  id: HbMUqRTBRQVIahjF
+  description: CO admin key
+  value: CUSTOM_KEY
