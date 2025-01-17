@@ -45,7 +45,6 @@ def run(client, keep_after, dry_run):
             f"{'(dry-run)' if dry_run else ''} deleting {asset.type} {asset.name}, created {created}, last_used {last_used}, size {size/1e9} GB"
         )
 
-        print(asset)
         if asset.source_bucket and asset.source_bucket.external:
             external_size += size
             total_external_assets += 1
