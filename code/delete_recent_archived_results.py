@@ -1,28 +1,81 @@
-from aind_codeocean_api.codeocean import CodeOceanClient
-from aind_codeocean_utils.api_handler import APIHandler
+import argparse
 import datetime
-import os, sys, argparse
+import logging
+import os
+import sys
+
+from codeocean import CodeOcean
+from codeocean.data_asset import DataAssetSearchParams
 
 
-def run(delete_after=30, dry_run=True):
-    co_client = CodeOceanClient(domain="https://codeocean.allenneuraldynamics.org/", token=os.environ["CUSTOM_KEY"])
-    api_handler = APIHandler(co_client=co_client)
+def find_archived_data_assets_to_delete(client, keep_after):
+    data_asset_params = DataAssetSearchParams(
+        offset=0,
+        limit=1000,
+        sort_order="desc",
+        type="dataset",
+        archived=True,
+    )
 
-    keep_after = datetime.datetime.now() - datetime.timedelta(days=delete_after)
+    data_assets = client.data_assets.search_data_assets_iterator(data_asset_params)
 
-    assets = api_handler.find_archived_data_assets_to_delete(keep_after=keep_after)
+    for d in data_assets:
+        created = datetime.datetime.fromtimestamp(d.created)
+        last_used = (
+            datetime.datetime.fromtimestamp(d.last_used) if d.last_used != 0 else None
+        )
+        old = created < keep_after
+        not_used_recently = not last_used or last_used < keep_after
 
-    for i,asset in enumerate(assets):
-        created = datetime.datetime.fromtimestamp(asset['created'])        
-        print(f"{'(dry-run)' if dry_run else ''} deleting {asset['type']} {asset['name']}, created {created}")
+        if old and not_used_recently:
+            yield d, created, last_used
+
+
+def run(client, keep_after, dry_run):
+    assets = find_archived_data_assets_to_delete(client=client, keep_after=keep_after)
+
+    internal_size = 0
+    external_size = 0
+    total_internal_assets = 0
+    total_external_assets = 0
+
+    for asset, created, last_used in assets:
+        size = asset.size or 0 
+        logging.info(
+            f"{'(dry-run)' if dry_run else ''} deleting {asset.type} {asset.name}, created {created}, last_used {last_used}, size {size/1e9} GB"
+        )
+
+        print(asset)
+        if asset.source_bucket and asset.source_bucket.external:
+            external_size += size
+            total_external_assets += 1
+        else:
+            internal_size += size
+            total_internal_assets += 1
+
         if not dry_run:
-            co_client.delete_data_asset(data_asset_id=asset['id'])
+            client.delete_data_asset(data_asset_id=asset["id"])
 
-if __name__ == "__main__": 
+    logging.info(f"total external assets: {total_external_assets}")
+    logging.info(f"total external size: {external_size/1e9} GB")
+    logging.info(f"total internal assets: {total_internal_assets}")
+    logging.info(f"total internal size: {internal_size/1e9} GB")
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+
     argparse = argparse.ArgumentParser()
-    argparse.add_argument('--dry-run')
-    argparse.add_argument('--delete-after', type=int)
+    argparse.add_argument("--dry-run")
+    argparse.add_argument("--delete-after", type=int)
     args = argparse.parse_args()
-    
+
     dry_run = args.dry_run != "off"
-    run(delete_after=args.delete_after, dry_run=dry_run)
+    keep_after = datetime.datetime.now() - datetime.timedelta(days=args.delete_after)
+
+    co_client = CodeOcean(
+        domain=os.environ["CODE_OCEAN_DOMAIN"],
+        token=os.environ["CUSTOM_KEY"],
+    )
+
+    run(client=co_client, keep_after=keep_after, dry_run=dry_run)

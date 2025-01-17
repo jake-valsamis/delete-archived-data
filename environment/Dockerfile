@@ -1,4 +1,4 @@
-# hash:sha256:88aaf1bdcc4cfe0d9d752c83b6c9a6ee999a27ca4b1f26b08ced0df4d0db9d5f
+# hash:sha256:457ae8e78b9fccac81b6034571530f04b7c091943ef320edc71247216428cd16
 ARG REGISTRY_HOST
 FROM $REGISTRY_HOST/codeocean/jupyterlab:3.6.1-miniconda4.12.0-python3.9-ubuntu20.04
 
@@ -9,5 +9,7 @@ ARG GIT_ASKPASS
 ARG GIT_ACCESS_TOKEN
 COPY git-askpass /
 
+ENV CODE_OCEAN_DOMAIN=https://codeocean.allenneuraldynamics.org/
+
 RUN pip install -U --no-cache-dir \
-    aind-codeocean-utils==0.1.4
+    codeocean==0.3.0
