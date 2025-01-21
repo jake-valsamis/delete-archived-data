@@ -2,6 +2,7 @@ import argparse
 import datetime
 import logging
 import os
+import requests
 import sys
 
 from codeocean import CodeOcean
@@ -36,8 +37,10 @@ def run(client, keep_after, dry_run):
 
     internal_size = 0
     external_size = 0
+    actual_size = 0
     total_internal_assets = 0
-    total_external_assets = 0
+    total_external_assets = 0    
+    total_actual_assets = 0
 
     for asset, created, last_used in assets:
         size = asset.size or 0 
@@ -53,12 +56,19 @@ def run(client, keep_after, dry_run):
             total_internal_assets += 1
 
         if not dry_run:
-            client.delete_data_asset(data_asset_id=asset["id"])
+            try:
+                client.data_assets.delete_data_asset(data_asset_id=asset.id)
+                actual_size += size
+                total_actual_assets += 1
+            except requests.exceptions.HTTPError as e:
+                logging.error(e)
 
     logging.info(f"total external assets: {total_external_assets}")
     logging.info(f"total external size: {external_size/1e9} GB")
     logging.info(f"total internal assets: {total_internal_assets}")
     logging.info(f"total internal size: {internal_size/1e9} GB")
+    logging.info(f"actual deleted assets: {total_actual_assets}")
+    logging.info(f"actual deleted size: {actual_size/1e9} GB")
 
 
 if __name__ == "__main__":
