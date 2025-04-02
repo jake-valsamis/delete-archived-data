@@ -1,0 +1,26 @@
+{
+	"version": 1,
+	"named_parameters": true,
+	"parameters": [
+		{
+			"id": "I5iQscJeyr4Udk5I",
+			"name": "delete after (days)",
+			"param_name": "delete-after",
+			"type": "text",
+			"value_type": "string",
+			"default_value": "30"
+		},
+		{
+			"id": "dSYHmaKak80CzPtJ",
+			"name": "dry run",
+			"param_name": "dry-run",
+			"type": "list",
+			"value_type": "string",
+			"default_value": "on",
+			"extra_data": [
+				"on",
+				"off"
+			]
+		}
+	]
+}
